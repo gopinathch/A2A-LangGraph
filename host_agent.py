@@ -10,9 +10,6 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
 
 
-###############################################################################
-# 1) A2A SCHEMA STUBS (Synchronous)
-###############################################################################
 class AgentCapabilities:
     def __init__(
         self, streaming=False, pushNotifications=False, stateTransitionHistory=False
@@ -100,9 +97,6 @@ class RemoteAgentClient:
         return resp.get("result", {})
 
 
-###############################################################################
-# 3) HostAgent (Synchronous)
-###############################################################################
 class HostAgent:
     """Holds references to multiple RemoteAgentClients, one per address."""
 
@@ -174,9 +168,6 @@ class HostAgent:
             return f"Remote agent call failed: {exc}"
 
 
-###############################################################################
-# 4) Tools returning partials (no global!). We'll build them from the host_agent.
-###############################################################################
 def make_list_agents_tool(host_agent: HostAgent):
     """Return a synchronous tool function that calls host_agent.list_agents_info()."""
 
@@ -202,12 +193,9 @@ def make_send_task_tool(host_agent: HostAgent):
     return send_task_tool
 
 
-###############################################################################
-# 5) Build the ReAct agent from a HostAgent, with a memory checkpointer
-###############################################################################
 def build_react_agent(host_agent: HostAgent):
     # Create the top-level LLM
-    llm = ChatOpenAI(model="gpt-4o-mini")
+    llm = ChatOpenAI(model="gpt-4o")
     memory = MemorySaver()
 
     # Make the two tools referencing our host_agent
@@ -235,10 +223,6 @@ Return the final result to the user.
     return agent
 
 
-###############################################################################
-# 6) Typer-based CLI with a conversation loop
-###############################################################################
-
 app = typer.Typer()
 
 
@@ -250,9 +234,8 @@ def run_agent(remote_url: str = "http://localhost:8000"):
     """
     # 1) Build the HostAgent
     host_agent = HostAgent([remote_url])
-    # 2) Initialize (fetch agent.json)
+
     host_agent.initialize()
-    # 3) Build the ReAct agent
     react_agent = build_react_agent(host_agent)
 
     typer.echo(f"Host agent ready. Connected to: {remote_url}")

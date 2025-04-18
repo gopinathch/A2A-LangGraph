@@ -25,7 +25,7 @@ def main(host, port):
         if not os.getenv("OPENAI_API_KEY"):
             raise MissingAPIKeyError("OPENAI_API_KEY environment variable not set.")
 
-        capabilities = AgentCapabilities(streaming=True, pushNotifications=True)
+        capabilities = AgentCapabilities(streaming=True, pushNotifications=False)
         skill = AgentSkill(
             id="convert_currency",
             name="Currency Exchange Rates Tool",
