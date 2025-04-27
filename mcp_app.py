@@ -1,10 +1,9 @@
-from langchain_core.tools import tool
 from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP(name="MinimalServer", host="0.0.0.0", port=3000)
 
 
-@tool
+@mcp.tool()
 def get_exchange_rate(
     currency_from: str = "USD",
     currency_to: str = "EUR",
