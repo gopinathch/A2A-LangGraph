@@ -22,8 +22,16 @@ logger = logging.getLogger(__name__)
 def main(host, port):
     """Starts the Currency Agent server."""
     try:
-        if not os.getenv("OPENAI_API_KEY"):
-            raise MissingAPIKeyError("OPENAI_API_KEY environment variable not set.")
+        # Check for Azure OpenAI required environment variables
+        required_azure_vars = [
+            "AZURE_OPENAI_ENDPOINT",
+            "AZURE_OPENAI_API_KEY", 
+            "AZURE_OPENAI_DEPLOYMENT_NAME"
+        ]
+        
+        missing_vars = [var for var in required_azure_vars if not os.getenv(var)]
+        if missing_vars:
+            raise MissingAPIKeyError(f"Missing Azure OpenAI environment variables: {', '.join(missing_vars)}")
 
         capabilities = AgentCapabilities(streaming=True, pushNotifications=False)
         skill = AgentSkill(

@@ -195,7 +195,7 @@ class InMemoryTaskManager(TaskManager):
         )
 
     async def upsert_task(self, task_send_params: TaskSendParams) -> Task:
-        logger.info(f"Upserting task {task_send_params.id}")
+        logger.info(f"Upserting task {task_send_params.id} and {task_send_params.sessionId}")
         async with self.lock:
             task = self.tasks.get(task_send_params.id)
             if task is None:
@@ -220,14 +220,18 @@ class InMemoryTaskManager(TaskManager):
     async def update_store(
         self, task_id: str, status: TaskStatus, artifacts: list[Artifact]
     ) -> Task:
+        logger.info(f"update_store called for task {task_id} with status {status.state if status else 'None'}")
         async with self.lock:
             try:
                 task = self.tasks[task_id]
+                logger.info(f"Found existing task {task_id} with current status {task.status.state if task.status else 'None'}")
             except KeyError:
                 logger.error(f"Task {task_id} not found for updating the task")
                 raise ValueError(f"Task {task_id} not found")
 
+            old_state = task.status.state if task.status else None
             task.status = status
+            logger.info(f"Updated task {task_id} status from {old_state} to {status.state}")
 
             if status.message is not None:
                 task.history.append(status.message)
@@ -249,25 +253,33 @@ class InMemoryTaskManager(TaskManager):
         return new_task
 
     async def setup_sse_consumer(self, task_id: str, is_resubscribe: bool = False):
+        logger.info(f"Setting up SSE consumer for task {task_id}, is_resubscribe={is_resubscribe}")
         async with self.subscriber_lock:
             if task_id not in self.task_sse_subscribers:
                 if is_resubscribe:
+                    logger.warning(f"Task {task_id} not found for resubscription")
                     raise ValueError("Task not found for resubscription")
                 else:
+                    logger.info(f"Creating new subscriber list for task {task_id}")
                     self.task_sse_subscribers[task_id] = []
 
             sse_event_queue = asyncio.Queue(maxsize=0)  # <=0 is unlimited
             self.task_sse_subscribers[task_id].append(sse_event_queue)
+            logger.info(f"Added new subscriber for task {task_id}, total subscribers: {len(self.task_sse_subscribers[task_id])}")
             return sse_event_queue
 
     async def enqueue_events_for_sse(self, task_id, task_update_event):
+        logger.info(f"Enqueuing events for SSE for task {task_id}, event type: {type(task_update_event).__name__}")
         async with self.subscriber_lock:
             if task_id not in self.task_sse_subscribers:
+                logger.info(f"No subscribers found for task {task_id}")
                 return
 
             current_subscribers = self.task_sse_subscribers[task_id]
+            logger.info(f"Found {len(current_subscribers)} subscribers for task {task_id}")
             for subscriber in current_subscribers:
                 await subscriber.put(task_update_event)
+            logger.info(f"Successfully enqueued events for all subscribers of task {task_id}")
 
     async def dequeue_events_for_sse(
         self, request_id, task_id, sse_event_queue: asyncio.Queue

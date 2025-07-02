@@ -1,0 +1,5 @@
+
+
+https://azureai-experiments.openai.azure.com/openai/deployments/gpt-4o-mini/chat/completions?api-version=2025-01-01-preview
+
+https://azureai-experiments.openai.azure.com/openai/deployments/gpt-4o-mini/chat/completions?api-version=2025-01-01-preview
